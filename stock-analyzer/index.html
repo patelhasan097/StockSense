@@ -1,0 +1,588 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover, user-scalable=no" />
+  <meta name="mobile-web-app-capable" content="yes" />
+  <meta name="apple-mobile-web-app-capable" content="yes" />
+  <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent" />
+  <meta name="apple-mobile-web-app-title" content="StockSense" />
+  <meta name="theme-color" content="#0d1117" />
+  <meta name="description" content="Aapka personal AI-powered halal Indian stock analyzer" />
+
+  <title>StockSense</title>
+
+  <!-- PWA Manifest -->
+  <link rel="manifest" href="manifest.json" />
+
+  <!-- Apple touch icons -->
+  <link rel="apple-touch-icon" href="icons/icon-192.png" />
+  <link rel="apple-touch-icon" sizes="152x152" href="icons/icon-152.png" />
+  <link rel="apple-touch-icon" sizes="144x144" href="icons/icon-144.png" />
+  <link rel="apple-touch-icon" sizes="128x128" href="icons/icon-128.png" />
+  <link rel="icon" type="image/png" sizes="32x32" href="icons/favicon.ico" />
+
+  <!-- Styles -->
+  <link rel="stylesheet" href="style.css" />
+
+  <!-- Tabler Icons -->
+  <link rel="stylesheet"
+    href="https://cdn.jsdelivr.net/npm/@tabler/icons-webfont@2.44.0/tabler-icons.min.css" />
+
+  <!-- TradingView Lightweight Charts -->
+  <script src="https://unpkg.com/lightweight-charts@4.1.3/dist/lightweight-charts.standalone.production.js"></script>
+</head>
+<body>
+
+  <!-- ── Install Banner (shown when PWA installable) ── -->
+  <div id="installBanner" class="install-banner hidden">
+    <div class="install-banner-inner">
+      <img src="icons/icon-72.png" width="36" height="36" alt="StockSense icon" />
+      <div class="install-text">
+        <strong>StockSense Install Karo</strong>
+        <span>Phone pe app jaisa experience</span>
+      </div>
+      <button id="installBtn" class="install-yes-btn">Install</button>
+      <button id="installDismiss" class="install-no-btn">✕</button>
+    </div>
+  </div>
+
+  <!-- ── HEADER ── -->
+  <header class="app-header">
+    <div class="header-inner">
+      <div class="logo">
+        <img src="icons/icon-72.png" width="28" height="28" alt="logo" class="logo-img" />
+        <span class="logo-text">StockSense</span>
+        <span class="logo-badge">AI</span>
+      </div>
+      <div class="header-actions">
+        <button class="hdr-btn" id="offlineIndicator" title="Network status">
+          <i class="ti ti-wifi"></i>
+        </button>
+        <button class="hdr-btn" onclick="openSettings()" title="API Keys Settings">
+          <i class="ti ti-settings"></i>
+        </button>
+      </div>
+    </div>
+  </header>
+
+  <!-- ── MAIN ── -->
+  <main class="app-main">
+
+    <!-- Search Section -->
+    <section class="search-section">
+      <div class="search-wrap">
+        <i class="ti ti-search search-icon"></i>
+        <input
+          type="search"
+          id="searchInput"
+          class="search-input"
+          placeholder="Stock name daalo... (TCS, Reliance)"
+          autocomplete="off"
+          autocorrect="off"
+          autocapitalize="characters"
+          spellcheck="false"
+          enterkeyhint="search"
+        />
+        <button id="searchBtn" class="search-btn" onclick="searchStock()">
+          <i class="ti ti-arrow-right"></i>
+        </button>
+      </div>
+
+      <!-- Quick Picks scrollable -->
+      <div class="quick-scroll">
+        <button class="qchip" onclick="quickSearch('RELIANCE')">⚡ Reliance</button>
+        <button class="qchip" onclick="quickSearch('TCS')">💻 TCS</button>
+        <button class="qchip" onclick="quickSearch('INFY')">💻 Infosys</button>
+        <button class="qchip" onclick="quickSearch('WIPRO')">💻 Wipro</button>
+        <button class="qchip" onclick="quickSearch('SUNPHARMA')">💊 Sun Pharma</button>
+        <button class="qchip" onclick="quickSearch('DRREDDY')">💊 Dr Reddy</button>
+        <button class="qchip" onclick="quickSearch('DABUR')">🌿 Dabur</button>
+        <button class="qchip" onclick="quickSearch('HINDUNILVR')">🧴 HUL</button>
+        <button class="qchip" onclick="quickSearch('ASIANPAINT')">🎨 Asian Paints</button>
+        <button class="qchip" onclick="quickSearch('TITAN')">⌚ Titan</button>
+        <button class="qchip" onclick="quickSearch('MARUTI')">🚗 Maruti</button>
+        <button class="qchip" onclick="quickSearch('TATAMOTORS')">🚗 Tata Motors</button>
+        <button class="qchip" onclick="quickSearch('ADANIGREEN')">🌱 Adani Green</button>
+        <button class="qchip" onclick="quickSearch('NTPC')">⚡ NTPC</button>
+        <button class="qchip" onclick="quickSearch('COALINDIA')">🪨 Coal India</button>
+      </div>
+    </section>
+
+    <!-- Loading State -->
+    <div id="loadingState" class="loading-state hidden">
+      <div class="loading-card">
+        <div class="loading-header">
+          <div class="spinner"></div>
+          <span id="loadingStock" class="loading-stock-name">Analyzing…</span>
+        </div>
+        <ul class="loading-steps" id="loadingSteps">
+          <li class="lstep" id="lstep-price">
+            <i class="ti ti-circle"></i>
+            <span>Price &amp; history fetch ho rahi hai…</span>
+          </li>
+          <li class="lstep" id="lstep-technical">
+            <i class="ti ti-circle"></i>
+            <span>Technical indicators calculate ho rahe hain…</span>
+          </li>
+          <li class="lstep" id="lstep-fundamental">
+            <i class="ti ti-circle"></i>
+            <span>Fundamental data aa raha hai…</span>
+          </li>
+          <li class="lstep" id="lstep-halal">
+            <i class="ti ti-circle"></i>
+            <span>Halal screening ho rahi hai…</span>
+          </li>
+          <li class="lstep" id="lstep-news">
+            <i class="ti ti-circle"></i>
+            <span>Latest news dhoondh raha hai…</span>
+          </li>
+          <li class="lstep" id="lstep-ai">
+            <i class="ti ti-circle"></i>
+            <span>Gemini AI complete analysis kar raha hai…</span>
+          </li>
+        </ul>
+      </div>
+    </div>
+
+    <!-- Error State -->
+    <div id="errorState" class="error-state hidden">
+      <div class="error-card">
+        <i class="ti ti-alert-circle error-icon"></i>
+        <p id="errorMsg">Kuch galat hua. Dobara try karo.</p>
+        <button class="error-retry-btn" onclick="clearError()">↩ Try Again</button>
+      </div>
+    </div>
+
+    <!-- ══ RESULTS ══ -->
+    <div id="resultsContainer" class="results hidden">
+
+      <!-- 1. Stock Header Card -->
+      <div class="card stock-header-card">
+        <div class="stock-top-row">
+          <div>
+            <div class="stock-symbol-row">
+              <h1 id="stockName">—</h1>
+              <span id="exchangeBadge" class="badge badge-exchange">NSE</span>
+            </div>
+            <div id="stockFullName" class="stock-fullname">—</div>
+            <div id="stockSector" class="stock-sector">—</div>
+          </div>
+          <div class="price-block">
+            <div id="currentPrice" class="current-price">—</div>
+            <div id="priceChange" class="price-change">—</div>
+          </div>
+        </div>
+        <div class="stock-badges-row">
+          <span id="halalHeaderBadge" class="badge badge-halal-pending">⏳ Checking…</span>
+          <span id="aiFinalVerdict" class="verdict-badge verdict-pending">—</span>
+          <span class="badge badge-delay">⏱ 15min delay</span>
+        </div>
+      </div>
+
+      <!-- 2. Metrics Strip -->
+      <div class="metrics-strip">
+        <div class="mstrip-item">
+          <div class="mstrip-label">52W High</div>
+          <div class="mstrip-value green" id="high52w">—</div>
+        </div>
+        <div class="mstrip-item">
+          <div class="mstrip-label">52W Low</div>
+          <div class="mstrip-value red" id="low52w">—</div>
+        </div>
+        <div class="mstrip-item">
+          <div class="mstrip-label">Volume</div>
+          <div class="mstrip-value" id="volume">—</div>
+        </div>
+        <div class="mstrip-item">
+          <div class="mstrip-label">Mkt Cap</div>
+          <div class="mstrip-value" id="marketCap">—</div>
+        </div>
+      </div>
+
+      <!-- 3. Verdict Bar (quick at-a-glance) -->
+      <div class="verdict-bar" id="verdictBar">
+        <div class="vbar-item">
+          <div class="vbar-label">Technical</div>
+          <div class="vbar-val" id="vbarTech">—</div>
+        </div>
+        <div class="vbar-divider"></div>
+        <div class="vbar-item">
+          <div class="vbar-label">Fundamental</div>
+          <div class="vbar-val" id="vbarFund">—</div>
+        </div>
+        <div class="vbar-divider"></div>
+        <div class="vbar-item">
+          <div class="vbar-label">Halal</div>
+          <div class="vbar-val" id="vbarHalal">—</div>
+        </div>
+        <div class="vbar-divider"></div>
+        <div class="vbar-item">
+          <div class="vbar-label">AI Signal</div>
+          <div class="vbar-val" id="vbarAI">—</div>
+        </div>
+      </div>
+
+      <!-- 4. Chart Card -->
+      <div class="card">
+        <div class="card-header">
+          <h2><i class="ti ti-chart-candlestick"></i> Chart</h2>
+          <div class="tf-btns">
+            <button class="tf-btn" onclick="changeTimeframe('1W')" data-tf="1W">1W</button>
+            <button class="tf-btn" onclick="changeTimeframe('1M')" data-tf="1M">1M</button>
+            <button class="tf-btn active" onclick="changeTimeframe('3M')" data-tf="3M">3M</button>
+            <button class="tf-btn" onclick="changeTimeframe('6M')" data-tf="6M">6M</button>
+            <button class="tf-btn" onclick="changeTimeframe('1Y')" data-tf="1Y">1Y</button>
+          </div>
+        </div>
+        <div id="priceChart" class="chart-main"></div>
+        <div class="chart-legend">
+          <span class="legend-item"><span class="legend-dot" style="background:#e3b341"></span>EMA20</span>
+          <span class="legend-item"><span class="legend-dot" style="background:#58a6ff"></span>EMA50</span>
+          <span class="legend-item"><span class="legend-dot" style="background:#f78166"></span>EMA200</span>
+        </div>
+      </div>
+
+      <!-- 5. Technical Analysis — collapsible -->
+      <div class="card">
+        <div class="card-header collapsible" onclick="toggleCard('techBody')">
+          <h2><i class="ti ti-trending-up"></i> Technical Analysis</h2>
+          <div class="card-header-right">
+            <span id="techOverallSignal" class="signal-badge">—</span>
+            <i class="ti ti-chevron-down collapse-icon" id="techBodyIcon"></i>
+          </div>
+        </div>
+        <div id="techBody">
+          <div class="tech-grid">
+            <!-- RSI -->
+            <div class="indicator-box">
+              <div class="ind-label">RSI (14)</div>
+              <div class="ind-main-value" id="rsiValue">—</div>
+              <div class="rsi-bar-wrap">
+                <div class="rsi-track">
+                  <div class="rsi-zone oversold"></div>
+                  <div class="rsi-zone neutral"></div>
+                  <div class="rsi-zone overbought"></div>
+                  <div id="rsiMarker" class="rsi-marker" style="left:50%"></div>
+                </div>
+                <div class="rsi-labels"><span>0</span><span>30</span><span>70</span><span>100</span></div>
+              </div>
+              <div class="ind-signal" id="rsiSignal">—</div>
+            </div>
+            <!-- MACD -->
+            <div class="indicator-box">
+              <div class="ind-label">MACD</div>
+              <div class="ind-main-value" id="macdValue">—</div>
+              <div class="ind-sub-row"><span class="ind-sub-label">Signal:</span><span id="macdSignalLine">—</span></div>
+              <div class="ind-sub-row"><span class="ind-sub-label">Histogram:</span><span id="macdHistogram">—</span></div>
+              <div class="ind-signal" id="macdSignal">—</div>
+            </div>
+            <!-- Moving Averages -->
+            <div class="indicator-box">
+              <div class="ind-label">Moving Averages</div>
+              <div class="ma-rows">
+                <div class="ma-row"><span class="ma-name">EMA 20</span><span class="ma-val" id="ema20">—</span><span class="ma-pos" id="ema20pos">—</span></div>
+                <div class="ma-row"><span class="ma-name">EMA 50</span><span class="ma-val" id="ema50">—</span><span class="ma-pos" id="ema50pos">—</span></div>
+                <div class="ma-row"><span class="ma-name">EMA 200</span><span class="ma-val" id="ema200">—</span><span class="ma-pos" id="ema200pos">—</span></div>
+              </div>
+              <div class="ind-signal" id="maSignal">—</div>
+            </div>
+            <!-- Bollinger Bands -->
+            <div class="indicator-box">
+              <div class="ind-label">Bollinger Bands</div>
+              <div class="ma-rows">
+                <div class="ma-row"><span class="ma-name">Upper</span><span class="ma-val red" id="bbUpper">—</span></div>
+                <div class="ma-row"><span class="ma-name">Middle</span><span class="ma-val" id="bbMiddle">—</span></div>
+                <div class="ma-row"><span class="ma-name">Lower</span><span class="ma-val green" id="bbLower">—</span></div>
+                <div class="ma-row"><span class="ma-name">Width</span><span class="ma-val" id="bbWidth">—</span></div>
+              </div>
+              <div class="ind-signal" id="bbSignal">—</div>
+            </div>
+          </div>
+
+          <div class="sr-row">
+            <div class="sr-box sr-resistance">
+              <div class="sr-title"><i class="ti ti-barrier-block"></i> Resistance</div>
+              <div id="resistanceLevels" class="sr-levels">—</div>
+            </div>
+            <div class="sr-box sr-support">
+              <div class="sr-title"><i class="ti ti-shield"></i> Support</div>
+              <div id="supportLevels" class="sr-levels">—</div>
+            </div>
+          </div>
+          <div class="volume-signal-row">
+            <i class="ti ti-chart-bar"></i>
+            <span id="volumeSignal">—</span>
+          </div>
+        </div>
+      </div>
+
+      <!-- 6. Fundamental Analysis -->
+      <div class="card">
+        <div class="card-header collapsible" onclick="toggleCard('fundBody')">
+          <h2><i class="ti ti-report-analytics"></i> Fundamentals</h2>
+          <div class="card-header-right">
+            <span id="fundamentalGrade" class="signal-badge">—</span>
+            <i class="ti ti-chevron-down collapse-icon" id="fundBodyIcon"></i>
+          </div>
+        </div>
+        <div id="fundBody">
+          <div class="fund-grid">
+            <div class="fund-item"><div class="fund-label">P/E Ratio</div><div class="fund-value" id="peRatio">—</div><div class="fund-note" id="peNote">—</div></div>
+            <div class="fund-item"><div class="fund-label">ROE</div><div class="fund-value" id="roe">—</div><div class="fund-note" id="roeNote">—</div></div>
+            <div class="fund-item"><div class="fund-label">Debt/Equity</div><div class="fund-value" id="debtEquity">—</div><div class="fund-note" id="debtNote">—</div></div>
+            <div class="fund-item"><div class="fund-label">Rev Growth</div><div class="fund-value" id="revGrowth">—</div><div class="fund-note" id="revNote">—</div></div>
+            <div class="fund-item"><div class="fund-label">Profit Margin</div><div class="fund-value" id="profitMargin">—</div><div class="fund-note" id="marginNote">—</div></div>
+            <div class="fund-item"><div class="fund-label">EPS</div><div class="fund-value" id="eps">—</div><div class="fund-note" id="epsNote">—</div></div>
+            <div class="fund-item"><div class="fund-label">Book Value</div><div class="fund-value" id="bookValue">—</div><div class="fund-note" id="bookNote">—</div></div>
+            <div class="fund-item"><div class="fund-label">Div Yield</div><div class="fund-value" id="divYield">—</div><div class="fund-note" id="divNote">—</div></div>
+          </div>
+        </div>
+      </div>
+
+      <!-- 7. Halal Screening -->
+      <div class="card halal-card">
+        <div class="card-header collapsible" onclick="toggleCard('halalBody')">
+          <h2><i class="ti ti-moon-stars"></i> Halal Screening</h2>
+          <div class="card-header-right">
+            <span id="halalVerdictBadge" class="halal-verdict-badge pending">⏳</span>
+            <i class="ti ti-chevron-down collapse-icon" id="halalBodyIcon"></i>
+          </div>
+        </div>
+        <div id="halalBody">
+          <div class="halal-checks" id="halalChecks">
+            <div class="hcheck-item" id="hcheck-sector">
+              <div class="hcheck-icon">⏳</div>
+              <div class="hcheck-body"><div class="hcheck-title">Business / Sector check</div><div class="hcheck-detail" id="hcheck-sector-text">—</div></div>
+            </div>
+            <div class="hcheck-item" id="hcheck-debt">
+              <div class="hcheck-icon">⏳</div>
+              <div class="hcheck-body"><div class="hcheck-title">Interest-based debt &lt; 33%</div><div class="hcheck-detail" id="hcheck-debt-text">—</div></div>
+            </div>
+            <div class="hcheck-item" id="hcheck-income">
+              <div class="hcheck-icon">⏳</div>
+              <div class="hcheck-body"><div class="hcheck-title">Haram income &lt; 5%</div><div class="hcheck-detail" id="hcheck-income-text">—</div></div>
+            </div>
+          </div>
+          <div class="halal-ai-box">
+            <div class="halal-ai-label"><i class="ti ti-sparkles"></i> Gemini AI — Halal Analysis</div>
+            <div id="halalAiText" class="halal-ai-text">—</div>
+          </div>
+          <div id="purificationBox" class="purification-box hidden">
+            <i class="ti ti-info-circle"></i>
+            <span id="purificationText">—</span>
+          </div>
+        </div>
+      </div>
+
+      <!-- 8. AI Full Report -->
+      <div class="card ai-report-card">
+        <div class="card-header collapsible" onclick="toggleCard('aiBody')">
+          <h2><i class="ti ti-sparkles"></i> Gemini AI Report</h2>
+          <div class="card-header-right">
+            <i class="ti ti-chevron-down collapse-icon" id="aiBodyIcon"></i>
+          </div>
+        </div>
+        <div id="aiBody">
+          <!-- Trade Levels — always visible -->
+          <div class="trade-levels-grid">
+            <div class="trade-level entry"><div class="tl-label">Entry Zone</div><div class="tl-value" id="aiEntryPrice">—</div></div>
+            <div class="trade-level target"><div class="tl-label">Target</div><div class="tl-value" id="aiTargetPrice">—</div></div>
+            <div class="trade-level stoploss"><div class="tl-label">Stop Loss</div><div class="tl-value" id="aiStopLoss">—</div></div>
+            <div class="trade-level rr"><div class="tl-label">Risk:Reward</div><div class="tl-value" id="aiRiskReward">—</div></div>
+          </div>
+
+          <div class="report-block">
+            <div class="report-block-title"><i class="ti ti-calendar-stats"></i> Long-Term Outlook (1–3 Saal)</div>
+            <div id="aiLongTerm" class="report-text">—</div>
+          </div>
+          <div class="report-block">
+            <div class="report-block-title"><i class="ti ti-arrows-exchange-2"></i> Swing Trade Setup</div>
+            <div id="aiSwingText" class="report-text">—</div>
+          </div>
+          <div class="report-block">
+            <div class="report-block-title"><i class="ti ti-alert-triangle"></i> Risk Factors</div>
+            <div id="aiRiskFactors" class="report-text">—</div>
+          </div>
+
+          <!-- Final Verdict -->
+          <div class="final-verdict-box" id="finalVerdictBox">
+            <div class="fv-label">Final Verdict</div>
+            <div class="fv-value" id="fvValue">—</div>
+            <div class="fv-reason" id="fvReason">—</div>
+          </div>
+        </div>
+      </div>
+
+      <!-- 9. News -->
+      <div class="card">
+        <div class="card-header collapsible" onclick="toggleCard('newsBody')">
+          <h2><i class="ti ti-news"></i> Latest News</h2>
+          <div class="card-header-right">
+            <span id="newsSentimentBadge" class="signal-badge">—</span>
+            <i class="ti ti-chevron-down collapse-icon" id="newsBodyIcon"></i>
+          </div>
+        </div>
+        <div id="newsBody">
+          <div id="newsList" class="news-list"></div>
+        </div>
+      </div>
+
+    </div><!-- end #resultsContainer -->
+
+  </main>
+
+  <!-- ── Bottom Nav Bar (mobile) ── -->
+  <nav class="bottom-nav">
+    <button class="bnav-btn active" id="bnav-home" onclick="goHome()">
+      <i class="ti ti-home"></i>
+      <span>Home</span>
+    </button>
+    <button class="bnav-btn" onclick="document.getElementById('searchInput').focus(); scrollToTop()">
+      <i class="ti ti-search"></i>
+      <span>Search</span>
+    </button>
+    <button class="bnav-btn" onclick="scrollToSection('techBody')">
+      <i class="ti ti-trending-up"></i>
+      <span>Technical</span>
+    </button>
+    <button class="bnav-btn" onclick="scrollToSection('halalBody')">
+      <i class="ti ti-moon-stars"></i>
+      <span>Halal</span>
+    </button>
+    <button class="bnav-btn" onclick="scrollToSection('aiBody')">
+      <i class="ti ti-sparkles"></i>
+      <span>AI Report</span>
+    </button>
+  </nav>
+
+  <!-- ── SETUP MODAL (first time only) ── -->
+  <div id="setupOverlay" class="setup-overlay hidden">
+    <div class="setup-modal">
+      <div class="setup-header">
+        <img src="icons/icon-96.png" width="52" height="52" alt="StockSense" class="setup-logo" />
+        <h1 class="setup-title">StockSense</h1>
+        <p class="setup-subtitle">Pehli baar sirf 4 free API keys daalo<br>Phir kabhi nahi maangega 🔒</p>
+      </div>
+
+      <div class="setup-steps-info">
+        <a href="https://twelvedata.com" target="_blank" class="setup-link">
+          <i class="ti ti-external-link"></i> twelvedata.com
+        </a>
+        <a href="https://alphavantage.co" target="_blank" class="setup-link">
+          <i class="ti ti-external-link"></i> alphavantage.co
+        </a>
+        <a href="https://gnews.io" target="_blank" class="setup-link">
+          <i class="ti ti-external-link"></i> gnews.io
+        </a>
+        <a href="https://aistudio.google.com" target="_blank" class="setup-link">
+          <i class="ti ti-external-link"></i> aistudio.google.com
+        </a>
+      </div>
+
+      <div class="setup-form">
+        <div class="setup-field">
+          <label class="setup-label">
+            <i class="ti ti-chart-line"></i>
+            Twelve Data Key <span class="setup-req">*</span>
+          </label>
+          <input type="text" id="s_twelve" class="setup-input"
+            placeholder="e.g. a1b2c3d4e5f6..." autocomplete="off" spellcheck="false" />
+          <div class="setup-hint">Price + chart data • Free: 800 calls/day</div>
+        </div>
+
+        <div class="setup-field">
+          <label class="setup-label">
+            <i class="ti ti-report-analytics"></i>
+            Alpha Vantage Key <span class="setup-req">*</span>
+          </label>
+          <input type="text" id="s_alpha" class="setup-input"
+            placeholder="e.g. ABCDE12345..." autocomplete="off" spellcheck="false" />
+          <div class="setup-hint">Fundamentals • Free: 25 calls/day</div>
+        </div>
+
+        <div class="setup-field">
+          <label class="setup-label">
+            <i class="ti ti-news"></i>
+            GNews Key <span class="setup-req">*</span>
+          </label>
+          <input type="text" id="s_gnews" class="setup-input"
+            placeholder="e.g. abc123xyz..." autocomplete="off" spellcheck="false" />
+          <div class="setup-hint">News • Free: 100 calls/day</div>
+        </div>
+
+        <div class="setup-field">
+          <label class="setup-label">
+            <i class="ti ti-sparkles"></i>
+            Gemini API Key <span class="setup-req">*</span>
+          </label>
+          <input type="text" id="s_gemini" class="setup-input"
+            placeholder="e.g. AIzaSy..." autocomplete="off" spellcheck="false" />
+          <div class="setup-hint">AI Analysis • Free: 15 req/min</div>
+        </div>
+
+        <div id="setupError" class="setup-error hidden">
+          ⚠️ Saari 4 keys required hain
+        </div>
+
+        <button class="setup-save-btn" onclick="saveSetup()">
+          <i class="ti ti-device-floppy"></i>
+          Save &amp; Start
+        </button>
+
+        <div class="setup-security">
+          <i class="ti ti-lock"></i>
+          Keys sirf aapke phone mein save hoti hain — server pe nahi jaatein
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- ── SETTINGS MODAL (update keys) ── -->
+  <div id="settingsOverlay" class="setup-overlay hidden">
+    <div class="setup-modal">
+      <div class="setup-header">
+        <h2 class="setup-title" style="font-size:20px">⚙️ API Keys Update Karo</h2>
+        <p class="setup-subtitle">Keys sirf aapke phone mein hain — safe hai</p>
+      </div>
+      <div class="setup-form">
+        <div class="setup-field">
+          <label class="setup-label"><i class="ti ti-chart-line"></i> Twelve Data Key</label>
+          <input type="text" id="u_twelve" class="setup-input" autocomplete="off" spellcheck="false" />
+        </div>
+        <div class="setup-field">
+          <label class="setup-label"><i class="ti ti-report-analytics"></i> Alpha Vantage Key</label>
+          <input type="text" id="u_alpha" class="setup-input" autocomplete="off" spellcheck="false" />
+        </div>
+        <div class="setup-field">
+          <label class="setup-label"><i class="ti ti-news"></i> GNews Key</label>
+          <input type="text" id="u_gnews" class="setup-input" autocomplete="off" spellcheck="false" />
+        </div>
+        <div class="setup-field">
+          <label class="setup-label"><i class="ti ti-sparkles"></i> Gemini Key</label>
+          <input type="text" id="u_gemini" class="setup-input" autocomplete="off" spellcheck="false" />
+        </div>
+        <div style="display:flex;gap:10px;margin-top:4px">
+          <button class="setup-save-btn" style="flex:1" onclick="updateKeys()">
+            <i class="ti ti-check"></i> Save
+          </button>
+          <button class="setup-cancel-btn" onclick="closeSettings()">Cancel</button>
+        </div>
+        <button class="setup-clear-btn" onclick="clearAllKeys()">
+          <i class="ti ti-trash"></i> Saari keys delete karo
+        </button>
+      </div>
+    </div>
+  </div>
+
+  <!-- Scripts -->
+  <script src="config.js"></script>
+  <script src="technical.js"></script>
+  <script src="halal.js"></script>
+  <script src="api.js"></script>
+  <script src="charts.js"></script>
+  <script src="gemini.js"></script>
+  <script src="app.js"></script>
+  <script src="pwa.js"></script>
+</body>
+</html>
